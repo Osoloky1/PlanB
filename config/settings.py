@@ -12,6 +12,25 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 
 from pathlib import Path
 
+
+import environ
+import os
+
+# Inicializa environ
+env = environ.Env(
+    DEBUG=(bool, False)
+)
+
+# Carga el archivo .env
+environ.Env.read_env(os.path.join(BASE_DIR, ".env"))
+
+# Variables
+SECRET_KEY = env("SECRET_KEY")
+DEBUG = env("DEBUG")
+ALLOWED_HOSTS = env.list("ALLOWED_HOSTS", default=["localhost"])
+
+
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
