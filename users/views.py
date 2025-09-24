@@ -1,7 +1,9 @@
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.decorators import api_view
+from rest_framework.permissions import IsAuthenticated
 from django.contrib.auth import get_user_model
+from django.contrib.auth.hashers import make_password
 
 User = get_user_model()
 
@@ -25,3 +27,8 @@ def register_user(request):
     )
     return Response({"message": "Usuario creado con éxito"}, status=status.HTTP_201_CREATED)
 
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def private_ping(request):
+    # Si llega aquí es porque el JWT es válido
+    return Response({"message": "Estas logeado", "email": request.user.email})
