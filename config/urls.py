@@ -1,8 +1,7 @@
-# config/urls.py
 from django.contrib import admin
 from django.urls import path
 from django.http import JsonResponse
-from users.views import register_user, private_ping
+from users.views import register_user
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView, TokenVerifyView
 
 def health(_): return JsonResponse({'status':'ok'})
@@ -10,11 +9,13 @@ def home(_):   return JsonResponse({'message':'Backend online'})
 
 urlpatterns = [
     path('admin/', admin.site.urls),
+
     path('api/register/', register_user),
-    path('api/privado/', private_ping),
+
     path('api/token/', TokenObtainPairView.as_view()),
     path('api/token/refresh/', TokenRefreshView.as_view()),
     path('api/token/verify/', TokenVerifyView.as_view()),
+
     path('health/', health),
     path('', home),
 ]
