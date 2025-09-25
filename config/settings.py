@@ -1,31 +1,27 @@
-"""
-Django settings for config project.
-"""
-
 from pathlib import Path
 import os
 import environ
 
-# --- Rutas base
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-# --- Variables de entorno
+# ---------------- Env ----------------
 env = environ.Env(
     DEBUG=(bool, False),
     ALLOWED_HOSTS=(list, []),
 )
-
-# Carga .env solo si existe (en Railway normalmente usas Variables)
 env_file = BASE_DIR / ".env"
 if env_file.exists():
     environ.Env.read_env(str(env_file))
 
-# --- Claves / debug / hosts
-SECRET_KEY = env("SECRET_KEY", default="unsafe-dev-key")  # pon una en Variables en Railway
+SECRET_KEY = env("SECRET_KEY", default="unsafe-dev-key")
 DEBUG = env.bool("DEBUG", default=False)
-ALLOWED_HOSTS = env.list("ALLOWED_HOSTS", default=["*"])  # luego restringe a tu dominio
 
-# --- Apps
+# Producción: pon dominios reales (Railway + localhost)
+ALLOWED_HOSTS = env.list("ALLOWED_HOSTS", default=[
+    "planb-production.up.railway.app", "localhost", "127.0.0.1"
+])
+
+# ---------------- Apps ----------------
 INSTALLED_APPS = [
     "django.contrib.admin",
     "django.contrib.auth",
@@ -33,19 +29,27 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+
     # terceros
     "rest_framework",
     "corsheaders",
+    # "whitenoise.runserver_nostatic",  # opcional si usas WhiteNoise
+
     # tus apps
     "users",
 ]
+
+# ⚠️ SOLO deja esto si realmente tienes un modelo custom en users/models.py
+# que hereda de AbstractUser + migraciones creadas ANTES del primer migrate.
+# Si NO lo tienes, comenta esta línea y usa el User estándar.
 AUTH_USER_MODEL = "users.User"
 
-# --- Middleware
+# ---------------- Middleware ----------------
 MIDDLEWARE = [
+    "corsheaders.middleware.CorsMiddleware",      # debe ir primero
     "django.middleware.security.SecurityMiddleware",
+    # "whitenoise.middleware.WhiteNoiseMiddleware",  # si sirves estáticos con WhiteNoise
     "django.contrib.sessions.middleware.SessionMiddleware",
-    "corsheaders.middleware.CorsMiddleware",  
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
@@ -54,7 +58,6 @@ MIDDLEWARE = [
 ]
 
 ROOT_URLCONF = "config.urls"
-
 TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
@@ -69,47 +72,52 @@ TEMPLATES = [
         },
     },
 ]
-
 WSGI_APPLICATION = "config.wsgi.application"
 
-# --- Base de datos (usa DATABASE_URL si la defines; si no, sqlite)
+# ---------------- Base de datos (PostgreSQL por DATABASE_URL) ----------------
+# Ejemplo DATABASE_URL (Railway): postgres://USER:PASSWORD@HOST:PORT/DBNAME
 DATABASES = {
     "default": env.db(default=f"sqlite:///{BASE_DIR / 'db.sqlite3'}")
 }
+# Mantener conexiones abiertas (mejor para PaaS)
+DATABASES["default"]["CONN_MAX_AGE"] = env.int("DB_CONN_MAX_AGE", default=600)
 
-# --- Validación de contraseñas
-AUTH_PASSWORD_VALIDATORS = [
-    {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},
-    {"NAME": "django.contrib.auth.password_validation.MinimumLengthValidator"},
-    {"NAME": "django.contrib.auth.password_validation.CommonPasswordValidator"},
-    {"NAME": "django.contrib.auth.password_validation.NumericPasswordValidator"},
-]
-
-# --- CORS / CSRF (ajusta dominios de tu frontend y backend)
-CORS_ALLOWED_ORIGINS = env.list(
-    "CORS_ALLOWED_ORIGINS",
-    default=[
-        "http://localhost:5173",
-        "http://127.0.0.1:5173",
-    ],
-)
-CORS_ALLOW_ALL_ORIGINS = env.bool("CORS_ALLOW_ALL_ORIGINS", default=False)
-CSRF_TRUSTED_ORIGINS = env.list("CSRF_TRUSTED_ORIGINS", default=[])
-
+# ---------------- Auth REST ----------------
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": (
         "rest_framework_simplejwt.authentication.JWTAuthentication",
     ),
 }
 
-# --- i18n
-LANGUAGE_CODE = "en-us"
-TIME_ZONE = "UTC"
+# ---------------- i18n ----------------
+LANGUAGE_CODE = "es-cl"
+TIME_ZONE = "America/Santiago"
 USE_I18N = True
 USE_TZ = True
 
-# --- Estáticos (necesario para collectstatic en Railway)
+# ---------------- Static ----------------
 STATIC_URL = "/static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
-# (solo si usas WhiteNoise)
+# Si usas WhiteNoise:
+# STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
+
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
+# ---------------- CORS / CSRF ----------------
+# Pon estas envs en Railway (ver más abajo)
+CORS_ALLOWED_ORIGINS = env.list("CORS_ALLOWED_ORIGINS", default=[
+    "https://fastidious-hamster-a7997b.netlify.app",
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
+])
+CORS_ALLOW_ALL_ORIGINS = env.bool("CORS_ALLOW_ALL_ORIGINS", default=False)
+# CORS_ALLOW_CREDENTIALS = True  # solo si usas cookies/sesión
+
+CSRF_TRUSTED_ORIGINS = env.list("CSRF_TRUSTED_ORIGINS", default=[
+    "https://fastidious-hamster-a7997b.netlify.app",
+    "https://planb-production.up.railway.app",
+])
+
+# Detrás de proxy (Railway usa HTTPS)
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+# SECURE_SSL_REDIRECT = not DEBUG  # opcional en prod

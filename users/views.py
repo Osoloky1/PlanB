@@ -1,34 +1,27 @@
-from rest_framework import status
+from django.contrib.auth.models import User
+from django.db import IntegrityError
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
-from rest_framework.decorators import api_view
-from rest_framework.permissions import IsAuthenticated
-from django.contrib.auth import get_user_model
-from django.contrib.auth.hashers import make_password
-
-User = get_user_model()
-
-from django.contrib.auth.hashers import make_password
+from rest_framework import status
+import logging
+log = logging.getLogger(__name__)
 
 @api_view(['POST'])
+@permission_classes([AllowAny])
 def register_user(request):
-    email = request.data.get("email")
-    password = request.data.get("password")
+    try:
+        email = (request.data.get('email') or '').strip().lower()
+        password = request.data.get('password') or ''
+        if not email or not password:
+            return Response({'error': 'email y password son requeridos'}, status=400)
 
-    if not email or not password:
-        return Response({"error": "Email y contraseña requeridos"}, status=status.HTTP_400_BAD_REQUEST)
+        username = email.split('@')[0] or email  # User estándar requiere username
+        User.objects.create_user(username=username, email=email, password=password)
+        return Response({'message': 'Usuario creado'}, status=201)
 
-    if User.objects.filter(username=email).exists():
-        return Response({"error": "El usuario ya existe"}, status=status.HTTP_400_BAD_REQUEST)
-
-    user = User.objects.create(
-        username=email,
-        email=email,
-        password=make_password(password)
-    )
-    return Response({"message": "Usuario creado con éxito"}, status=status.HTTP_201_CREATED)
-
-@api_view(["GET"])
-@permission_classes([IsAuthenticated])
-def private_ping(request):
-    # Si llega aquí es porque el JWT es válido
-    return Response({"message": "Estas logeado", "email": request.user.email})
+    except IntegrityError:
+        return Response({'error': 'El email/usuario ya existe'}, status=409)
+    except Exception as e:
+        log.exception('Fallo en register_user')
+        return Response({'error': str(e)}, status=500)
