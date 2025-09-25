@@ -104,15 +104,11 @@ STATIC_ROOT = BASE_DIR / "staticfiles"
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 # ---------------- CORS / CSRF ----------------
-# Pon estas envs en Railway (ver más abajo)
-CORS_ALLOWED_ORIGINS = env.list("CORS_ALLOWED_ORIGINS", default=[
+CORS_ALLOW_ALL_ORIGINS = False
+CORS_ALLOWED_ORIGINS = [
     "https://fastidious-hamster-a7997b.netlify.app",
     "http://localhost:5173",
-    "http://127.0.0.1:5173",
-])
-CORS_ALLOW_ALL_ORIGINS = env.bool("CORS_ALLOW_ALL_ORIGINS", default=False)
-# CORS_ALLOW_CREDENTIALS = True  # solo si usas cookies/sesión
-
+]
 CSRF_TRUSTED_ORIGINS = env.list("CSRF_TRUSTED_ORIGINS", default=[
     "https://fastidious-hamster-a7997b.netlify.app",
     "https://planb-production.up.railway.app",
@@ -121,3 +117,10 @@ CSRF_TRUSTED_ORIGINS = env.list("CSRF_TRUSTED_ORIGINS", default=[
 # Detrás de proxy (Railway usa HTTPS)
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 # SECURE_SSL_REDIRECT = not DEBUG  # opcional en prod
+
+
+CORS_ALLOW_ALL_ORIGINS = False
+CORS_ALLOWED_ORIGINS = [
+    "https://fastidious-hamster-a7997b.netlify.app",
+    "http://localhost:5173",
+]
