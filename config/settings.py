@@ -11,9 +11,11 @@ env = environ.Env(
     CORS_ALLOWED_ORIGINS=(list, []),
     CSRF_TRUSTED_ORIGINS=(list, []),
 )
+
 env_file = BASE_DIR / ".env"
 if env_file.exists():
-    environ.Env.read_env(str(env_file))
+    # ⬇️ Punto 4: NO sobreescribas variables del sistema (Railway) con las del .env local
+    environ.Env.read_env(str(env_file), overwrite=False)
 
 SECRET_KEY = env("SECRET_KEY", default="unsafe-dev-key")
 DEBUG = env.bool("DEBUG", default=False)
@@ -43,7 +45,6 @@ INSTALLED_APPS = [
 ]
 
 # ⚠️ Déjalo SOLO si tienes un modelo custom en users/models.py con migraciones.
-# Si NO tienes usuario custom, COMENTA esta línea para usar el User estándar.
 AUTH_USER_MODEL = "users.User"
 
 # ---------------- Middleware ----------------
@@ -100,13 +101,11 @@ STATIC_ROOT = BASE_DIR / "staticfiles"
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 # ---------------- CORS / CSRF ----------------
-# Modo producción: lista blanca
 CORS_ALLOW_ALL_ORIGINS = False
 CORS_ALLOWED_ORIGINS = env.list("CORS_ALLOWED_ORIGINS", default=[
     "https://fastidious-hamster-a7997b.netlify.app",
     "http://localhost:5173",
 ])
-
 CSRF_TRUSTED_ORIGINS = env.list("CSRF_TRUSTED_ORIGINS", default=[
     "https://fastidious-hamster-a7997b.netlify.app",
     "https://planb-production.up.railway.app",
